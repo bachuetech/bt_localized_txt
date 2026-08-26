@@ -2,12 +2,14 @@ use rustc_hash::FxHashMap;
 
 /// A collection of localized string values by a string code.
 /// format: localized string code, string value
+#[derive(Clone, Debug)]
 pub struct StringValues{
     values: FxHashMap<String, String>,
 }
 
 /// A collection of [`StringValues`] representing different languages, keyed by a numeric language ID.
-pub struct Locale{
+#[derive(Clone, Debug)]
+pub struct Localizer{
     locale: FxHashMap<u16,StringValues >
 }
 
@@ -20,13 +22,13 @@ impl Default for StringValues {
     }
 }
 
-impl Clone for StringValues {
+/*impl Clone for StringValues {
     fn clone(&self) -> Self {
         Self {
             values: self.values.clone(),
         }
     }
-}
+}*/
 
 impl StringValues {
     /// Retrieves a cloned string value associated with the specified string code.
@@ -53,7 +55,7 @@ impl StringValues {
     }     
 }
 
-impl Locale {
+impl Localizer {
     /// Creates a new, empty `Locale` instance.
     pub fn new() -> Self{
         Self { locale: FxHashMap::default() }
@@ -166,20 +168,20 @@ mod localizer_tests {
 
     #[test]
     fn test_new_locale_is_empty() {
-        let locale = Locale::new();
+        let locale = Localizer::new();
         assert!(locale.get_string_value(1, "hello").is_none());
     }
 
     #[test]
     fn test_insert_single_entry() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "greeting", "Hello");
         assert_eq!(locale.get_string_value(1, "greeting"), Some("Hello".to_string()));
     }
 
     #[test]
     fn test_insert_multiple_languages() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "greeting", "Hello");
         locale.insert(2, "greeting", "Bonjour");
         
@@ -189,7 +191,7 @@ mod localizer_tests {
 
     #[test]
     fn test_insert_overwrites_existing() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "key", "original");
         locale.insert(1, "key", "updated");
         
@@ -198,7 +200,7 @@ mod localizer_tests {
 
     #[test]
     fn test_insert_same_key_different_languages() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "farewell", "Goodbye");
         locale.insert(2, "farewell", "Au revoir");
         
@@ -208,20 +210,20 @@ mod localizer_tests {
 
     #[test]
     fn test_get_string_value_nonexistent_language() {
-        let locale = Locale::new();
+        let locale = Localizer::new();
         assert!(locale.get_string_value(999, "greeting").is_none());
     }
 
     #[test]
     fn test_get_string_value_nonexistent_key() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "existing", "value");
         assert!(locale.get_string_value(1, "nonexistent").is_none());
     }
 
     #[test]
     fn test_insert_batch_empty() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert_batch(1, std::iter::empty::<(&'static str, &'static str)>());
         // Should not create empty map - verify by checking another language works
         locale.insert(2, "key", "value");
@@ -231,14 +233,14 @@ mod localizer_tests {
 
     #[test]
     fn test_insert_batch_single_item() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert_batch(1, vec![("key", "value")]);
         assert_eq!(locale.get_string_value(1, "key"), Some("value".to_string()));
     }
 
     #[test]
     fn test_insert_batch_multiple_items() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert_batch(1, vec![
             ("greeting", "Hello"),
             ("farewell", "Goodbye"),
@@ -252,7 +254,7 @@ mod localizer_tests {
 
     #[test]
     fn test_insert_batch_multiple_languages() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert_batch(1, vec![("greeting", "Hello")]);
         locale.insert_batch(2, vec![("greeting", "Bonjour")]);
         
@@ -262,7 +264,7 @@ mod localizer_tests {
 
     #[test]
     fn test_insert_batch_overwrites_existing() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "key", "original");
         locale.insert_batch(1, vec![("key", "updated")]);
         assert_eq!(locale.get_string_value(1, "key"), Some("updated".to_string()));
@@ -270,7 +272,7 @@ mod localizer_tests {
 
     #[test]
     fn test_insert_batch_mixed_with_single_insert() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "single", "one");
         locale.insert_batch(1, vec![("batch1", "a"), ("batch2", "b")]);
         locale.insert(1, "another", "two");
@@ -283,35 +285,35 @@ mod localizer_tests {
 
     #[test]
     fn test_language_id_zero() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(0, "key", "value");
         assert_eq!(locale.get_string_value(0, "key"), Some("value".to_string()));
     }
 
     #[test]
     fn test_language_id_max() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(u16::MAX, "key", "value");
         assert_eq!(locale.get_string_value(u16::MAX, "key"), Some("value".to_string()));
     }
 
     #[test]
     fn test_empty_string_key() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "", "empty_key_value");
         assert_eq!(locale.get_string_value(1, ""), Some("empty_key_value".to_string()));
     }
 
     #[test]
     fn test_empty_string_value() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "empty_value", "");
         assert_eq!(locale.get_string_value(1, "empty_value"), Some("".to_string()));
     }
 
     #[test]
     fn test_unicode_strings() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "japanese", "こんにちは");
         locale.insert(2, "japanese", "你好");
         locale.insert(3, "emoji", "🎉🎊");
@@ -323,7 +325,7 @@ mod localizer_tests {
 
     #[test]
     fn test_special_characters_in_key() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "key:with:colons", "value1");
         locale.insert(1, "key with spaces", "value2");
         locale.insert(1, "key\nwith\nnewlines", "value3");
@@ -335,7 +337,7 @@ mod localizer_tests {
 
     #[test]
     fn test_many_entries_same_language() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         for i in 0..100 {
             let key = format!("key_{}", i);
             let value = format!("value_{}", i);
@@ -351,7 +353,7 @@ mod localizer_tests {
 
     #[test]
     fn test_multiple_languages_isolation() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         
         // Populate language 1
         for i in 0..50 {
@@ -371,7 +373,7 @@ mod localizer_tests {
 
     #[test]
     fn test_insert_batch_from_array() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         let items = [("a", "1"), ("b", "2"), ("c", "3")];
         locale.insert_batch(1, items);
         
@@ -382,7 +384,7 @@ mod localizer_tests {
 
     #[test]
     fn test_get_returns_clone_not_reference() {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert(1, "key", "original");
         
         let mut val = locale.get_string_value(1, "key").unwrap();
@@ -405,7 +407,7 @@ mod string_values_tests {
     ];
 
     fn create_test_string_values() -> StringValues {
-        let mut locale = Locale::new();
+        let mut locale = Localizer::new();
         locale.insert_batch(1,EN_VALUES);
         /*locale.insert_batch(1, vec![
             ("greeting", "Hello"),

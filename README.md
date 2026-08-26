@@ -61,6 +61,8 @@ println!("Missing Key Value: '{}'", missing_key);                   // Prints: '
     * Initial Release
 * 0.1.1
     * New function get_list_of_languages to get the list of available Languages as Vec<(u16, String)> (id,language)
+* 0.1.2
+    * New functionality to read translations from a TOML.
 
 ## License
 GPL-3.0-only

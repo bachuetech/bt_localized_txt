@@ -1,6 +1,7 @@
 use rustc_hash::FxHashMap;
 
 /// A registry of supported languages, mapping language codes and names to a unique `u16` ID.
+#[derive(Clone)]
 pub struct Languages{
     ids: FxHashMap<String, u16>,
     name_list: Vec<Box<str>>,
@@ -26,12 +27,17 @@ impl Languages {
     /// * The newly assigned `u16` ID for the language, or `0` if capacity is reached.
     #[inline]
     pub fn add_language(&mut self, language_code: &str, language_name: &str) -> u16{
-        if self.name_list.len() < u16::MAX.into() {
-            let lang_idx = self.name_list.len() as u16;
+        let code = language_code.to_lowercase();
+        if let Some(&idx) = self.ids.get(&code) {
+            self.name_list[idx as usize] = language_name.into();
+            return idx;
+        }
+        if self.name_list.len() < u16::MAX as usize {
+            let idx = self.name_list.len() as u16;
             self.name_list.push(language_name.into());
-            self.ids.insert(language_code.to_lowercase(), lang_idx);
-            lang_idx
-        }else{
+            self.ids.insert(code, idx);
+            idx
+        } else {
             0
         }
     }
@@ -255,6 +261,16 @@ mod languages_tests {
         assert_eq!(langs.get_lang_id_be("unknown"), 2);
     }
 
+    #[test]
+    fn test_change_language_name_duplicate_codes() {
+        let mut langs = create_test_languages();
+        langs.add_language("en", "FixedEnglish");
+        //langs.change_default_language_id(0).unwrap();
+        
+        assert_eq!(langs.get_lang_name(langs.get_lang_id("en").unwrap()), "FixedEnglish");
+    }
+
+
     // ===== get_lang_id Tests =====
 
     #[test]
@@ -441,7 +457,7 @@ mod languages_tests {
         langs.add_language("EN", "English Variant");
         
         // Second insert should overwrite first
-        assert_eq!(langs.get_lang_id("en"), Some(1));
+        assert_eq!(langs.get_lang_id("en"), Some(0));
     }
 
     #[test]
@@ -524,8 +540,7 @@ mod languages_tests {
         let result = langs.get_list_of_languages();
         
         // This should compile: result borrows from langs
-        for (id, name) in result {
-            assert!(id >= 0);
+        for (_id, name) in result {
             assert!(!name.is_empty());
         }
         // langs is still usable here
