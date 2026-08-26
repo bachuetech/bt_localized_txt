@@ -115,6 +115,36 @@ impl Languages {
             .or_else(|| self.get_lang_id_beginning_with(language_code))
             .unwrap_or(self.default_id)
     }
+
+    /// Returns a list of all language IDs and their corresponding human-readable names.
+    ///
+    /// This method iterates through the internal language registry and constructs
+    /// a vector of `(ID, name)` tuples. The order of elements is non-deterministic
+    /// (depends on the underlying `HashMap` iteration order).
+    ///
+    /// # Returns
+    ///
+    /// A `Vec` containing tuples of `(language_id, language_name)`. The string slices
+    /// are borrowed from `self`, so the vector cannot outlive the `Languages` instance.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bt_localized_txt::languages::Languages;
+    ///
+    /// let languages = Languages::new(); // or your constructor
+    /// let list = languages.get_list_of_languages();
+    ///
+    /// for (id, name) in list {
+    ///     println!("{}: {}", id, name);
+    /// }
+    /// ```    
+    pub fn get_list_of_languages(&self) -> Vec<(u16,&str)>{
+        self.ids
+            .iter()
+            .map(|(_, &lang_id)| (lang_id, self.get_lang_name(lang_id)))
+            .collect()
+    }
 }
 
 //************************ */
@@ -441,6 +471,66 @@ mod languages_tests {
             assert_eq!(langs.get_lang_name(i as u16), format!("Language {}", i));
         }
     }
+
+
+    #[test]
+    fn test_get_list_of_languages_returns_all_entries() {
+        let langs =  create_test_languages();
+        let result = langs.get_list_of_languages();
+        
+        // HashMap iteration order is non-deterministic, so sort for comparison
+        let mut result = result;
+        result.sort_by_key(|&(id, _)| id);
+        
+        assert_eq!(result.len(), 4);
+        assert_eq!(result[0], (0, "English"));
+        assert_eq!(result[2], (2, "German"));
+        assert_eq!(result[1], (1, "French"));
+    }
+
+    #[test]
+    fn test_empty_languages_returns_empty_vec() {
+        let langs = Languages::new();
+        let result = langs.get_list_of_languages();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_single_language() {
+        let mut langs = Languages::new();
+        langs.add_language("rust", "Rust");
+        let result = langs.get_list_of_languages();
+        assert_eq!(result, vec![(0, "Rust")]);
+    }
+
+    #[test]
+    fn test_iterator_version_zero_allocation() {
+        // If you used the iterator-returning version instead:
+        let langs = create_test_languages();
+        let binding = langs.get_list_of_languages();
+        let collected: Vec<_> = binding.iter().collect();
+        
+        let mut result = collected;
+        result.sort_by_key(|&(id, _)| id);
+        
+        assert_eq!(result.len(), 4);
+        assert!(result.contains(&&(0u16, "English")));
+    }
+    
+    #[test]
+    fn test_lifetimes_are_valid() {
+        // Ensures returned references don't outlive self
+        let langs = create_test_languages();
+        let result = langs.get_list_of_languages();
+        
+        // This should compile: result borrows from langs
+        for (id, name) in result {
+            assert!(id >= 0);
+            assert!(!name.is_empty());
+        }
+        // langs is still usable here
+        assert!(langs.ids.len() == 4);
+    }    
 
     // ===== Integration Tests =====
 
