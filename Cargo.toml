@@ -6,9 +6,9 @@ authors = ["calvarez <calvarez@bachuetech.biz>"]
 description = "A high-performance localization system for managing multiple languages. It provides fast lookups and efficiently handles missing translations."
 keywords = ["localization","i18n","l10n","internationalization", "translation" ]
 categories = ["localization", "internationalization"]
-repository = "https://github.com/bachuetech/"
+repository = "https://github.com/bachuetech/bt_localized_txt.git"
 readme = "README.md"
-homepage = "https://github.com/bachuetech/"
+homepage = "https://github.com/bachuetech/bt_localized_txt"
 license = "GPL-3.0-only"
 
 [dependencies]
