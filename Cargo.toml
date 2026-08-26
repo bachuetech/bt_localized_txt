@@ -1,0 +1,15 @@
+[package]
+name = "bt_localized_txt"
+version = "0.1.0"
+edition = "2024"
+authors = ["calvarez <calvarez@bachuetech.biz>"]
+description = "A high-performance localization system for managing multiple languages. It provides fast lookups and efficiently handles missing translations."
+keywords = ["localization","i18n","l10n","internationalization", "translation" ]
+categories = ["localization", "internationalization"]
+repository = "https://github.com/bachuetech/"
+readme = "README.md"
+homepage = "https://github.com/bachuetech/"
+license = "GPL-3.0-only"
+
+[dependencies]
+rustc-hash = "2.1.3"
