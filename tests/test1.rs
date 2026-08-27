@@ -3,12 +3,12 @@
 #[cfg(test)]
 mod translator_sys_tests {
     use bt_localized_txt::languages::Languages;
-    use bt_localized_txt::translator::TraslatorHelper;
+    use bt_localized_txt::translator::TranslatorHelper;
 
 
 
-    fn create_test_helper() -> TraslatorHelper {
-        let mut helper = TraslatorHelper::default();
+    fn create_test_helper() -> TranslatorHelper {
+        let mut helper = TranslatorHelper::default();
         helper.add_language("en", "English");
         helper.add_language("es", "Spanish");
         helper.add_language("fr", "French");
@@ -17,19 +17,19 @@ mod translator_sys_tests {
 
     #[test]
     fn test_default_initialization() {
-        let helper = TraslatorHelper::default();
+        let helper = TranslatorHelper::default();
     }
 
     #[test]
     fn test_init_with_languages() {
         let languages = Languages::new();
-        let helper = TraslatorHelper::init(languages);
+        let helper = TranslatorHelper::init(languages);
     }
 
     #[test]
     fn test_add_language() {
         bt_logger::build_logger("bachuetech", "translator_test", bt_logger::LogLevel::VERBOSE, bt_logger::LogTarget::STD_OUT, None);                   
-        let mut helper = TraslatorHelper::default();
+        let mut helper = TranslatorHelper::default();
         let lang_id = helper.add_language("de", "German");
         assert!(lang_id == 0);
     }
@@ -37,7 +37,7 @@ mod translator_sys_tests {
     #[test]
     fn test_get_lang_id_be() {
         bt_logger::build_logger("bachuetech", "translator_test", bt_logger::LogLevel::VERBOSE, bt_logger::LogTarget::STD_OUT, None);                   
-        let mut helper = TraslatorHelper::default();
+        let mut helper = TranslatorHelper::default();
         helper.add_language("en", "English");
         let lang_id = helper.add_language("de", "German");        
         assert!(lang_id == 1);        

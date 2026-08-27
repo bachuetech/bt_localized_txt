@@ -7,7 +7,7 @@ This code is a lightweight, high-performance localization system. It provides a 
 ## Usage
 ```
 use crate::languages::Languages;
-use crate::localizer::Locale;
+use crate::localizer::Localizer;
 
 // 1. Initialize the Language Registry
 let mut languages = Languages::new();
@@ -20,7 +20,7 @@ let spanish_id = languages.add_language("es", "Español");
 languages.change_default_language_id(english_id).unwrap();
 
 // 2. Initialize the Locale (String Storage)
-let mut locale = Locale::new();
+let mut locale = Localizer::new();
 
 // Insert strings individually
 locale.insert(english_id, "greeting", "Hello, world!");
@@ -63,6 +63,10 @@ println!("Missing Key Value: '{}'", missing_key);                   // Prints: '
     * New function get_list_of_languages to get the list of available Languages as Vec<(u16, String)> (id,language)
 * 0.1.2
     * New functionality to read translations from a TOML.
+* 0.2.0
+    * Change the name from Locale to Localizer. 
+    * Add a function (get_list_of_languages) to the Translator to retrieve all languages. 
+    * Add documentation
 
 ## License
 GPL-3.0-only
