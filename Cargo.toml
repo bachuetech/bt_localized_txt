@@ -1,6 +1,6 @@
 [package]
 name = "bt_localized_txt"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 authors = ["calvarez <calvarez@bachuetech.biz>"]
 description = "A high-performance localization system for managing multiple languages. It provides fast lookups and efficiently handles missing translations."

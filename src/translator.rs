@@ -44,7 +44,7 @@ impl TranslatorHelper {
     /// # Example
     ///```
     /// use bt_localized_txt::translator::TranslatorHelper;
-    /// let translator = TraslatorHelper::default();
+    /// let translator = TranslatorHelper::default();
     /// ```
     pub fn default() -> TranslatorHelper {
         TranslatorHelper { 
@@ -196,7 +196,8 @@ impl TranslatorHelper {
         content_toml: &str
     ) -> Result<(), AnyErr> {
         let lang_id = self.get_lang_id_be(language_code);
-        let toml_table: toml::Table = toml::from_str(content_toml)?;
+        self.add_translation_with_lang_id(lang_id,translation_section,content_toml)
+        /*let toml_table: toml::Table = toml::from_str(content_toml)?;
         let section = match toml_table.get(translation_section) {
             Some(s) => s,
             None => return Err(
@@ -238,6 +239,64 @@ impl TranslatorHelper {
                     ))
                     .collect();
                 localizer.insert_batch(lang_id, owned_pairs);
+            }
+        } else {
+            return Err(
+                get_error!("", "Cannot parse section '{}' in TOML table (None)", translation_section).into()
+            );
+        }
+
+        Ok(())*/
+    }
+
+    pub fn add_translation_with_lang_id(
+        &mut self, 
+        language_id: u16, 
+        translation_section: &str, 
+        content_toml: &str
+    ) -> Result<(), AnyErr> {
+        let toml_table: toml::Table = toml::from_str(content_toml)?;
+        let section = match toml_table.get(translation_section) {
+            Some(s) => s,
+            None => return Err(
+                get_error!("", "Cannot find section '{}' in TOML table (None)", translation_section).into()
+            ),
+        };
+
+        // Fast path: direct table access without collecting into intermediate Vec
+        if let Some(table) = section.as_table() {
+            // Skip empty tables early
+            if table.is_empty() {
+                return Ok(());
+            }
+
+            // Pre-allocate localizer before insert to avoid reallocation
+            let localizer = self.holders
+                .entry(translation_section.to_string())
+                .or_insert_with(Localizer::new);
+
+            // Use Cow to avoid unnecessary allocations for borrowed strings
+            let translation_pairs: Vec<(Cow<'_, str>, Cow<'_, str>)> = table
+                .iter()
+                .filter_map(|(key, value)| {
+                    value.as_str().map(|value| (
+                        Cow::Borrowed(key.as_str()),
+                        Cow::Borrowed(value)
+                    ))
+                })
+                .collect();
+
+            // Only insert if we have translations
+            if !translation_pairs.is_empty() {
+                // Convert Cow pairs to static pairs only when needed for insert_batch
+                let owned_pairs: Vec<(&'static str, &'static str)> = translation_pairs
+                    .into_iter()
+                    .map(|(k, v)| (
+                        Box::leak(k.into_owned().into_boxed_str()) as &'static str,
+                        Box::leak(v.into_owned().into_boxed_str()) as &'static str
+                    ))
+                    .collect();
+                localizer.insert_batch(language_id, owned_pairs);
             }
         } else {
             return Err(

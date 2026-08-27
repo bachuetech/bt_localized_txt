@@ -67,6 +67,8 @@ println!("Missing Key Value: '{}'", missing_key);                   // Prints: '
     * Change the name from Locale to Localizer. 
     * Add a function (get_list_of_languages) to the Translator to retrieve all languages. 
     * Add documentation
+* 0.2.1
+    * Add the function add_translation_with_lang_id to add translations using the language ID.
 
 ## License
 GPL-3.0-only
