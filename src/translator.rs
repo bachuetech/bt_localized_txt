@@ -197,58 +197,74 @@ impl TranslatorHelper {
     ) -> Result<(), AnyErr> {
         let lang_id = self.get_lang_id_be(language_code);
         self.add_translation_with_lang_id(lang_id,translation_section,content_toml)
-        /*let toml_table: toml::Table = toml::from_str(content_toml)?;
-        let section = match toml_table.get(translation_section) {
-            Some(s) => s,
-            None => return Err(
-                get_error!("", "Cannot find section '{}' in TOML table (None)", translation_section).into()
-            ),
-        };
-
-        // Fast path: direct table access without collecting into intermediate Vec
-        if let Some(table) = section.as_table() {
-            // Skip empty tables early
-            if table.is_empty() {
-                return Ok(());
-            }
-
-            // Pre-allocate localizer before insert to avoid reallocation
-            let localizer = self.holders
-                .entry(translation_section.to_string())
-                .or_insert_with(Localizer::new);
-
-            // Use Cow to avoid unnecessary allocations for borrowed strings
-            let translation_pairs: Vec<(Cow<'_, str>, Cow<'_, str>)> = table
-                .iter()
-                .filter_map(|(key, value)| {
-                    value.as_str().map(|value| (
-                        Cow::Borrowed(key.as_str()),
-                        Cow::Borrowed(value)
-                    ))
-                })
-                .collect();
-
-            // Only insert if we have translations
-            if !translation_pairs.is_empty() {
-                // Convert Cow pairs to static pairs only when needed for insert_batch
-                let owned_pairs: Vec<(&'static str, &'static str)> = translation_pairs
-                    .into_iter()
-                    .map(|(k, v)| (
-                        Box::leak(k.into_owned().into_boxed_str()) as &'static str,
-                        Box::leak(v.into_owned().into_boxed_str()) as &'static str
-                    ))
-                    .collect();
-                localizer.insert_batch(lang_id, owned_pairs);
-            }
-        } else {
-            return Err(
-                get_error!("", "Cannot parse section '{}' in TOML table (None)", translation_section).into()
-            );
-        }
-
-        Ok(())*/
     }
 
+    /// Adds translations from a TOML-formatted string using a language ID.
+    ///
+    /// This is a more efficient variant of [`add_translation`] when you already
+    /// have the language ID, avoiding an extra lookup by language code.
+    ///
+    /// Parses TOML content and extracts key-value translation pairs from the
+    /// specified section, storing them in the appropriate [`Localizer`].
+    ///
+    /// # Arguments
+    ///
+    /// * `language_id` - The unique identifier of the target language (from [`add_language`])
+    /// * `translation_section` - The section name within the TOML to extract (e.g., "menu", "messages")
+    /// * `content_toml` - TOML-formatted string containing translation pairs
+    ///
+    /// # Returns
+    ///
+    /// - `Ok(())` - Translations were successfully added, or the section was empty
+    /// - `Err(AnyErr)` - An error occurred during parsing or extraction
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The TOML content cannot be parsed (invalid syntax)
+    /// - The specified section does not exist in the TOML document
+    /// - The section exists but is not a valid TOML table (e.g., it's a scalar or array)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bt_localized_txt::translator::TranslatorHelper;
+    /// use bt_localized_txt::languages::Languages;
+    ///
+    /// let mut translator = TranslatorHelper::default();
+    /// let lang_id = translator.add_language("en", "English");
+    ///
+    /// let toml = r#"
+    /// [menu]
+    /// file = "File"
+    /// edit = "Edit"
+    /// "#;
+    ///
+    /// translator.add_translation_with_lang_id(lang_id, "menu", toml);
+    /// 
+    /// let translation = translator.get_translation(lang_id, "menu", "file");
+    /// assert_eq!(translation, Some("File".to_string()));
+    /// ```
+    ///
+    /// # Behavior Notes
+    ///
+    /// - **Empty sections**: Silently accepts empty tables without error
+    /// - **Non-string values**: Keys with non-string values are skipped silently
+    /// - **New sections**: Automatically creates the [`Localizer`] if the section is new
+    /// - **Existing sections**: Merges new translations into the existing section
+    ///
+    /// # Memory Note
+    ///
+    /// This method uses `Box::leak` to create `'static` string references for
+    /// efficient storage. These strings persist for the program's lifetime and
+    /// are never deallocated. This is intentional for translation data that is
+    /// typically loaded once at startup.
+    ///
+    /// # Performance
+    ///
+    /// - Uses `Cow<'_, str>` to minimize allocations during TOML parsing
+    /// - Pre-allocates the localizer entry before inserting translation pairs
+    /// - Skips empty tables early to avoid unnecessary work
     pub fn add_translation_with_lang_id(
         &mut self, 
         language_id: u16, 
@@ -326,6 +342,71 @@ impl TranslatorHelper {
         self.holders
             .get(translation_section)
             .and_then(|t| t.get_string_values(language_id))
+    }
+
+    /// Retrieves a single translation string by its key.
+    ///
+    /// Looks up the translation for a specific key within a section and language.
+    /// This is the primary method for accessing individual localized strings.
+    ///
+    /// # Arguments
+    ///
+    /// * `language_id` - The unique identifier of the language (from [`add_language`])
+    /// * `translation_section` - The section name containing the translation (e.g., "menu")
+    /// * `translation_id` - The translation key to look up (e.g., "file", "edit")
+    ///
+    /// # Returns
+    ///
+    /// - `Some(String)` - The translated string if found
+    /// - `None` - If any of the following are true:
+    ///   - The section doesn't exist
+    ///   - The language has no translations in the section
+    ///   - The translation key doesn't exist
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bt_localized_txt::translator::TranslatorHelper;
+    ///
+    /// let mut translator = TranslatorHelper::default();
+    /// let en_id = translator.add_language("en", "English");
+    /// let es_id = translator.add_language("es", "Spanish");
+    ///
+    /// let en_toml = r#"
+    /// [menu]
+    /// file = "File"
+    /// "#;
+    ///
+    /// let es_toml = r#"
+    /// [menu]
+    /// file = "Archivo"
+    /// "#;
+    ///
+    /// translator.add_translation("en", "menu", en_toml).unwrap();
+    /// translator.add_translation("es", "menu", es_toml).unwrap();
+    ///
+    /// // Retrieve English translation
+    /// let en_file = translator.get_translation(en_id, "menu", "file");
+    /// assert_eq!(en_file, Some("File".to_string()));
+    ///
+    /// // Retrieve Spanish translation
+    /// let es_file = translator.get_translation(es_id, "menu", "file");
+    /// assert_eq!(es_file, Some("Archivo".to_string()));
+    ///
+    /// // Non-existent key returns None
+    /// let missing = translator.get_translation(en_id, "menu", "nonexistent");
+    /// assert_eq!(missing, None);
+    /// ```
+    ///
+    /// # Performance
+    ///
+    /// - Uses direct hash map lookups without intermediate Option checks
+    /// - Returns an owned `String` to avoid lifetime issues with internal storage   
+    pub fn get_translation(&self, language_id: u16, translation_section: &str, translation_id: &str) -> Option<String>{
+        // Direct access without intermediate Option checks
+        self.holders
+            .get(translation_section)
+            .and_then(|t| t.get_string_value(language_id, translation_id))
     }
 }
 

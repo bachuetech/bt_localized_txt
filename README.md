@@ -69,6 +69,9 @@ println!("Missing Key Value: '{}'", missing_key);                   // Prints: '
     * Add documentation
 * 0.2.1
     * Add the function add_translation_with_lang_id to add translations using the language ID.
+* 0.2.2
+    * Add the function get_translation to translator to retrieve an individual translation.
+    * Add documentation
 
 ## License
 GPL-3.0-only
