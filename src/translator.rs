@@ -408,6 +408,47 @@ impl TranslatorHelper {
             .get(translation_section)
             .and_then(|t| t.get_string_value(language_id, translation_id))
     }
+
+    /// Retrieves the human-readable name of a language by its unique identifier.
+    ///
+    /// Looks up the language name associated with the given `language_id`.
+    /// The name returned is the one provided during [`add_language`] registration
+    /// (e.g., "English", "Spanish", "French").
+    ///
+    /// # Arguments
+    ///
+    /// * `language_id` - The unique `u16` identifier returned by [`add_language`]
+    ///
+    /// # Returns
+    ///
+    /// - `Some(String)` - The human-readable language name if the ID exists
+    /// - `None` - If the `language_id` is out of bounds (not registered)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bt_localized_txt::translator::TranslatorHelper;
+    ///
+    /// let mut translator = TranslatorHelper::default();
+    /// let lang_id = translator.add_language("en", "English");
+    ///
+    /// let name = translator.get_language_name(lang_id);
+    /// assert_eq!(name, Some("English".to_string()));
+    ///
+    /// // Invalid ID returns None
+    /// let invalid = translator.get_language_name(999);
+    /// assert_eq!(invalid, None);
+    /// ```
+    ///
+    /// # Implementation Notes
+    ///
+    /// - Uses bounds checking against the internal languages list before lookup
+    /// - Returns an owned `String` to avoid lifetime dependencies on internal storage
+    /// - IDs are 0-indexed, the last valid index is `len - 1`    
+    pub fn get_language_name(&self, language_id: u16) -> Option<String>{
+        if language_id as usize >= self.languages.get_list_of_languages().len() { return None}
+        Some(self.languages.get_lang_name(language_id).to_owned())
+    }    
 }
 
 

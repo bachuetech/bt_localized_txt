@@ -72,6 +72,8 @@ println!("Missing Key Value: '{}'", missing_key);                   // Prints: '
 * 0.2.2
     * Add the function get_translation to translator to retrieve an individual translation.
     * Add documentation
+* 0.2.3
+    * Add the function get_language_name to retrieve the human-readable name of a language by its ID.   
 
 ## License
 GPL-3.0-only
