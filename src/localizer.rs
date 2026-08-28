@@ -2,33 +2,16 @@ use rustc_hash::FxHashMap;
 
 /// A collection of localized string values by a string code.
 /// format: localized string code, string value
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct StringValues{
     values: FxHashMap<String, String>,
 }
 
 /// A collection of [`StringValues`] representing different languages, keyed by a numeric language ID.
-#[derive(Clone, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Localizer{
     locale: FxHashMap<u16,StringValues >
 }
-
-
-impl Default for StringValues {
-    fn default() -> Self {
-        Self {
-            values: FxHashMap::default(),
-        }
-    }
-}
-
-/*impl Clone for StringValues {
-    fn clone(&self) -> Self {
-        Self {
-            values: self.values.clone(),
-        }
-    }
-}*/
 
 impl StringValues {
     /// Retrieves a cloned string value associated with the specified string code.

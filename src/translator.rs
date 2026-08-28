@@ -26,13 +26,14 @@ use crate::localizer::{Localizer, StringValues};
 /// translator.add_language("en", "English");
 /// translator.add_translation("en", "menu", "[menu]\nfile = \"File\"");
 /// ```
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TranslatorHelper {
     languages: Languages,
     holders: FxHashMap<String, Localizer>,
 }
 
-impl TranslatorHelper {
+impl Default for TranslatorHelper
+ {
     /// Creates a new `TraslatorHelper` with default settings.
     ///
     /// Initializes an empty translation holder and a default [`Languages`] instance.
@@ -45,14 +46,12 @@ impl TranslatorHelper {
     ///```
     /// use bt_localized_txt::translator::TranslatorHelper;
     /// let translator = TranslatorHelper::default();
-    /// ```
-    pub fn default() -> TranslatorHelper {
-        TranslatorHelper { 
-            holders: FxHashMap::default(), 
-            languages: Languages::new() 
-        }
+    /// ```    
+    fn default() -> Self {
+        Self { languages: Languages::new(), holders: FxHashMap::default() }
     }
-
+ }
+impl TranslatorHelper {
     /// Creates a new `TraslatorHelper` with pre-configured languages.
     ///
     /// Use this constructor when you have an existing [`Languages`] instance
@@ -289,7 +288,7 @@ impl TranslatorHelper {
             // Pre-allocate localizer before insert to avoid reallocation
             let localizer = self.holders
                 .entry(translation_section.to_string())
-                .or_insert_with(Localizer::new);
+                .or_default();
 
             // Use Cow to avoid unnecessary allocations for borrowed strings
             let translation_pairs: Vec<(Cow<'_, str>, Cow<'_, str>)> = table

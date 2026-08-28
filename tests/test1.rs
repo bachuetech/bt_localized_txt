@@ -17,13 +17,13 @@ mod translator_sys_tests {
 
     #[test]
     fn test_default_initialization() {
-        let helper = TranslatorHelper::default();
+        let _helper = TranslatorHelper::default();
     }
 
     #[test]
     fn test_init_with_languages() {
         let languages = Languages::new();
-        let helper = TranslatorHelper::init(languages);
+        let _helper = TranslatorHelper::init(languages);
     }
 
     #[test]

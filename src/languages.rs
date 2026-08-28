@@ -1,15 +1,23 @@
+use bt_any_error::any_err::AnyErr;
+use bt_logger::{get_error, log_error};
 use rustc_hash::FxHashMap;
 
 /// A registry of supported languages, mapping language codes and names to a unique `u16` ID.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Languages{
     ids: FxHashMap<String, u16>,
     name_list: Vec<Box<str>>,
     default_id: u16,
 }
 
+impl Default for Languages {
+    /// Creates a new, empty `Languages` instance.    
+     fn default() -> Self {
+         Self::new()
+     }
+}
+
 impl Languages {
-    /// Creates a new, empty `Languages` instance.
     pub fn new() -> Self{
         Self { ids: FxHashMap::default(), name_list: Vec::new(), default_id: 0}
     }
@@ -66,13 +74,14 @@ impl Languages {
     /// * `Ok(())` if the provided ID exists in the registry.
     /// * `Err(())` if the provided ID is out of bounds.
     #[inline]
-    pub fn change_default_language_id(&mut self, new_default_lang_id: u16) -> Result<(), ()>{
+    pub fn change_default_language_id(&mut self, new_default_lang_id: u16) -> Result<(), AnyErr>{
         if self.name_list.len() > new_default_lang_id.into(){
             self.default_id = new_default_lang_id;
             return Ok(())
         }
 
-        Err(())
+        log_error!("","Cannot change default language. ID is out of bounds");
+        Err(get_error!("","Cannot change default language. ID is out of bounds").into())
     }
 
     /// Retrieves the ID for a specific language code.
