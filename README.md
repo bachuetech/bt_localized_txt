@@ -76,6 +76,8 @@ println!("Missing Key Value: '{}'", missing_key);                   // Prints: '
     * Add the function get_language_name to retrieve the human-readable name of a language by its ID.
 * 0.2.4
     * Move code to derive Debug. Add debug to structs. Add customized errors.
+* 0.2.5
+    * Update dependency. Add the capability to return a language code given a language ID. New functions in Translator and Language.    
 
 ## License
 GPL-3.0-only

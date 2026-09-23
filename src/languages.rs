@@ -5,8 +5,9 @@ use rustc_hash::FxHashMap;
 /// A registry of supported languages, mapping language codes and names to a unique `u16` ID.
 #[derive(Debug, Clone)]
 pub struct Languages{
-    ids: FxHashMap<String, u16>,
-    name_list: Vec<Box<str>>,
+    ids: FxHashMap<String, u16>,   // code -> id
+    codes: Vec<Box<str>>,          // id -> code (new field v0.2.5)
+    name_list: Vec<Box<str>>,      // id -> name
     default_id: u16,
 }
 
@@ -19,7 +20,7 @@ impl Default for Languages {
 
 impl Languages {
     pub fn new() -> Self{
-        Self { ids: FxHashMap::default(), name_list: Vec::new(), default_id: 0}
+        Self { ids: FxHashMap::default(), codes: Vec::new(), name_list: Vec::new(), default_id: 0}
     }
 
     /// Adds a new language to the registry and returns its assigned ID.
@@ -43,6 +44,7 @@ impl Languages {
         if self.name_list.len() < u16::MAX as usize {
             let idx = self.name_list.len() as u16;
             self.name_list.push(language_name.into());
+            self.codes.push(code.clone().into());        // Store the code v0.2.5            
             self.ids.insert(code, idx);
             idx
         } else {
@@ -50,6 +52,34 @@ impl Languages {
         }
     }
     
+    /// Retrieves the language code by its ID.
+    /// 
+    /// # Arguments
+    /// * `id` - The unique `u16` ID of the language.
+    /// 
+    /// # Returns
+    /// * `Some(&str)` if the ID is valid.
+    /// * `None` if the ID is out of bounds.
+    #[inline]
+    pub fn get_lang_code(&self, id: u16) -> Option<&str> {
+        self.codes.get(id as usize).map(|s| &**s)
+    }
+
+    /// Alternative: Panics if ID is out of bounds (matches `get_lang_name` behavior).
+    /// Use `get_lang_code` instead if you prefer safe access.
+    /// # Arguments
+    /// * `id` - The unique `u16` ID of the language.
+    /// 
+    /// # Panics
+    /// Panics if `id` is out of bounds for the internal code list.
+    /// 
+    /// # Returns
+    /// * `&str` if the ID is valid containing the language code
+    #[inline]
+    pub fn get_lang_code_unchecked(&self, id: u16) -> &str {
+        &self.codes[id as usize]
+    }
+
     /// Retrieves the human-readable name of a language by its ID.
     ///
     /// # Arguments
@@ -607,4 +637,67 @@ mod languages_tests {
         assert_eq!(langs.get_lang_id_be("pt_BR"), 2);
         assert_eq!(langs.get_lang_id_be("pt-PT"), 2);
     }
+
+
+    //Get Lang using ID
+    #[test]
+    fn test_get_lang_code_single_language() {
+        let mut langs = Languages::new();
+        langs.add_language("en", "English");
+        assert_eq!(langs.get_lang_code(0), Some("en"));
+    }
+
+    #[test]
+    fn test_get_lang_code_normalizes_case() {
+        let mut langs = Languages::new();
+        langs.add_language("ES", "Spanish");
+        assert_eq!(langs.get_lang_code(0), Some("es"));
+        
+        langs.add_language("PT-BR", "Portuguese (Brazil)");
+        assert_eq!(langs.get_lang_code(1), Some("pt-br"));
+    }
+
+    #[test]
+    fn test_get_lang_code_multiple_languages() {
+        let mut langs = Languages::new();
+        
+        let id_en = langs.add_language("en", "English");
+        assert_eq!(langs.get_lang_code(id_en), Some("en"));
+        
+        let id_es = langs.add_language("es", "Spanish");
+        assert_eq!(langs.get_lang_code(id_es), Some("es"));
+        assert_eq!(langs.get_lang_code(id_en), Some("en")); // Verify first unchanged
+        
+        let id_fr = langs.add_language("fr", "French");
+        assert_eq!(langs.get_lang_code(id_fr), Some("fr"));
+        assert_eq!(langs.get_lang_code(id_es), Some("es"));
+        assert_eq!(langs.get_lang_code(id_en), Some("en"));
+    }
+
+    #[test]
+    fn test_get_lang_code_out_of_bounds() {
+        let mut langs = Languages::new();
+        langs.add_language("en", "English");
+        
+        assert_eq!(langs.get_lang_code(1), None);
+        assert_eq!(langs.get_lang_code(100), None);
+        assert_eq!(langs.get_lang_code(u16::MAX), None);
+    }
+
+    #[test]
+    fn test_get_lang_code_empty_registry() {
+        let langs = Languages::new();
+        assert_eq!(langs.get_lang_code(0), None);
+        assert_eq!(langs.get_lang_code(100), None);
+    }
+
+    #[test]
+    fn test_get_lang_code_with_unicode() {
+        let mut langs = Languages::new();
+        let id_ja = langs.add_language("ja", "Japanese");
+        let id_zh = langs.add_language("zh-CN", "Chinese (Simplified)");
+        
+        assert_eq!(langs.get_lang_code(id_ja), Some("ja"));
+        assert_eq!(langs.get_lang_code(id_zh), Some("zh-cn"));
+    }    
 }

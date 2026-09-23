@@ -1,6 +1,6 @@
 [package]
 name = "bt_localized_txt"
-version = "0.2.4"
+version = "0.2.5"
 edition = "2024"
 authors = ["calvarez <calvarez@bachuetech.biz>"]
 description = "A high-performance localization system for managing multiple languages. It provides fast lookups and efficiently handles missing translations."
@@ -15,4 +15,4 @@ license = "GPL-3.0-only"
 bt_any_error = "0.1.0"
 bt_logger = "0.6.0"
 rustc-hash = "2.1.3"
-toml = "1.1.4"
+toml = "1.1.6+spec-1.1.0"

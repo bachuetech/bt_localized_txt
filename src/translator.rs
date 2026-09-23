@@ -448,6 +448,42 @@ impl TranslatorHelper {
         if language_id as usize >= self.languages.get_list_of_languages().len() { return None}
         Some(self.languages.get_lang_name(language_id).to_owned())
     }    
+
+    /// Retrieves the language code by its unique identifier.
+    ///
+    /// Looks up the language code (e.g., "en", "es", "fr") associated with the given `language_id`.
+    /// The code returned is the lowercase normalized version provided during [`add_language`] registration.
+    ///
+    /// # Arguments
+    ///
+    /// * `language_id` - The unique `u16` identifier returned by [`add_language`]
+    ///
+    /// # Returns
+    ///
+    /// - `Some(String)` - The normalized lowercase language code (e.g., "en", "es") if the ID exists
+    /// - `None` - If the `language_id` is out of bounds (not registered)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use bt_localized_txt::translator::TranslatorHelper;
+    ///
+    /// let mut translator = TranslatorHelper::default();
+    /// let lang_id = translator.add_language("en-US", "English");
+    ///
+    /// let code = translator.get_language_code(lang_id);
+    /// assert_eq!(code, Some("en-us".to_string()));
+    ///
+    /// // Invalid ID returns None
+    /// let invalid = translator.get_language_code(999);
+    /// assert_eq!(invalid, None);
+    /// ```
+    pub fn get_language_code(&self, language_id: u16) -> Option<String> {
+        if language_id as usize >= self.languages.get_list_of_languages().len() { 
+            return None 
+        }
+        Some(self.languages.get_lang_code_unchecked(language_id).to_owned())
+    }    
 }
 
 
@@ -704,4 +740,73 @@ nested = "Nested value"
         let result = helper.add_translation("en", "greeting", toml_content);
         assert!(result.is_ok());
     }
+
+//Get Language code
+    #[test]
+    fn test_get_language_code_valid() {
+        let mut translator = TranslatorHelper::default();
+        let id_en = translator.add_language("en", "English");
+        
+        assert_eq!(translator.get_language_code(id_en), Some("en".to_string()));
+    }
+
+    #[test]
+    fn test_get_language_code_normalizes_case() {
+        let mut translator = TranslatorHelper::default();
+        let id_es = translator.add_language("ES", "Spanish");
+        let id_pt = translator.add_language("PT-BR", "Portuguese");
+        
+        assert_eq!(translator.get_language_code(id_es), Some("es".to_string()));
+        assert_eq!(translator.get_language_code(id_pt), Some("pt-br".to_string()));
+    }
+
+    #[test]
+    fn test_get_language_code_multiple_languages() {
+        let mut translator = TranslatorHelper::default();
+        let id_en = translator.add_language("en", "English");
+        let id_es = translator.add_language("es", "Spanish");
+        let id_fr = translator.add_language("fr", "French");
+        
+        assert_eq!(translator.get_language_code(id_en), Some("en".to_string()));
+        assert_eq!(translator.get_language_code(id_es), Some("es".to_string()));
+        assert_eq!(translator.get_language_code(id_fr), Some("fr".to_string()));
+    }
+
+    #[test]
+    fn test_get_language_code_out_of_bounds() {
+        let mut translator = TranslatorHelper::default();
+        translator.add_language("en", "English");
+        
+        assert_eq!(translator.get_language_code(1), None);
+        assert_eq!(translator.get_language_code(100), None);
+        assert_eq!(translator.get_language_code(u16::MAX), None);
+    }
+
+    #[test]
+    fn test_get_language_code_empty_translator() {
+        let translator = TranslatorHelper::default();
+        
+        assert_eq!(translator.get_language_code(0), None);
+        assert_eq!(translator.get_language_code(999), None);
+    }
+
+    #[test]
+    fn test_get_language_code_unicode() {
+        let mut translator = TranslatorHelper::default();
+        let id_ja = translator.add_language("ja", "Japanese");
+        let id_zh = translator.add_language("zh-CN", "Chinese (Simplified)");
+        
+        assert_eq!(translator.get_language_code(id_ja), Some("ja".to_string()));
+        assert_eq!(translator.get_language_code(id_zh), Some("zh-cn".to_string()));
+    }
+
+    #[test]
+    fn test_get_language_code_after_duplicate_registration() {
+        let mut translator = TranslatorHelper::default();
+        let id1 = translator.add_language("en", "English");
+        let id2 = translator.add_language("en", "English Duplicate"); // Should return same ID
+        
+        assert_eq!(id1, id2);
+        assert_eq!(translator.get_language_code(id1), Some("en".to_string()));
+    }    
 }
