@@ -77,7 +77,9 @@ println!("Missing Key Value: '{}'", missing_key);                   // Prints: '
 * 0.2.4
     * Move code to derive Debug. Add debug to structs. Add customized errors.
 * 0.2.5
-    * Update dependency. Add the capability to return a language code given a language ID. New functions in Translator and Language.    
+    * Update dependency. Add the capability to return a language code given a language ID. New functions in Translator and Language. 
+* 0.2.6
+    * Update dependency.       
 
 ## License
 GPL-3.0-only
